@@ -6,3 +6,4 @@ node_modules/
 # Runtime state and secrets. Keep these out of Git.
 data/hapi/
 data/astrbot/
+data/backups/

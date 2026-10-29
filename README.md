@@ -26,6 +26,8 @@ AstrBot 运行在 Docker 中，只负责聊天平台适配和消息路由。
 | Codex CLI | 修改代码、执行命令和测试 | 宿主机 |
 | AstrBot | 接入 Slack、QQ、微信等平台 | Docker |
 | HAPI Connector | 在 AstrBot 和 HAPI 之间转发消息、通知和审批 | AstrBot 插件 |
+| PostgreSQL | BananaHELPER 的项目和任务数据 | Docker |
+| Drizzle | TypeScript 表定义、查询与 SQL 迁移 | 宿主机工具 |
 
 ## 准备环境
 
@@ -33,7 +35,7 @@ AstrBot 运行在 Docker 中，只负责聊天平台适配和消息路由。
 - npm
 - Git
 - 已登录的 Codex CLI：`codex login status`
-- Docker 与 Docker Compose（运行 AstrBot 时需要）
+- Docker 与 Docker Compose（运行 AstrBot、PostgreSQL 时需要）
 
 ## 第一次启动
 
@@ -71,17 +73,10 @@ Hub，脚本会继续使用它，但不会在 `banana:stop` 时结束不归自�
 npm run astrbot:up
 ```
 
-启动 HAPI Hub：
+Hub 首次启动会在 `data/hapi/settings.json` 生成 Access Token。完成 `banana:start` 后
+直接读取 Token，无需再次启动 Hub 或 Runner：
 
 ```sh
-npm start
-```
-
-Hub 首次启动会在 `data/hapi/settings.json` 生成 Access Token。保持 Hub 运行，
-在另一个终端启动 Runner：
-
-```sh
-npm run hapi:runner:start
 npm run hapi:token
 ```
 
@@ -124,8 +119,66 @@ npm run hapi:doctor          # HAPI 诊断
 npm run astrbot:up           # 启动 AstrBot
 npm run astrbot:logs         # 查看 AstrBot 日志
 npm run astrbot:down         # 停止 AstrBot
+npm run db:up                # 后台启动 PostgreSQL，等待健康检查
+npm run db:migrate           # 执行已提交的数据库迁移
+npm run db:check             # 检查数据库及业务表
+npm run db:backup            # 备份本地 Compose 数据库
+npm run db:stop              # 停止 PostgreSQL，保留数据卷
+npm run typecheck            # 检查 TypeScript
 npm test                     # 检查仓库配置与启动器
 ```
+
+## PostgreSQL 与 Drizzle
+
+现有用户先 `git pull` 和 `npm ci`，再把 `.env.example` 中的 PostgreSQL 字段补到自己的
+`.env`，保留原有 HAPI 配置。运行 `openssl rand -hex 24` 生成本地密码，填写
+`POSTGRES_PASSWORD`；不要把密码发送到聊天或提交到 Git。
+
+```sh
+npm run db:up
+npm run db:migrate
+npm run db:check
+```
+
+数据库默认只监听 `127.0.0.1:5432`。数据保存在 Compose 的 `postgres-data` 命名卷中，
+停止容器不会删除数据；`docker compose down -v` 会删除该卷，不要用于日常停机。
+`POSTGRES_PASSWORD` 只在空卷初始化时创建密码，后续改 `.env` 不会改变已有数据库密码。
+
+也可以填写 `DATABASE_URL` 连接现有 PostgreSQL，此时跳过 `db:up`，直接迁移和检查。
+数据库迁移使用有建表权限的管理账号；它不应作为未来网站、MCP 的运行账号。
+等接入对应服务时，为每个服务单独配置账号和权限。
+
+本期只创建 `core.projects`、`core.tasks`。任务保存来源、状态以及可选的 HAPI 会话 ID；
+这些表目前是存储基础，还未自动订阅 HAPI 事件或同步任务状态。
+不会读取、修改 HAPI 内部 SQLite，也不会预先创建网站和股票看板的业务表。
+
+表定义在 `src/db/schema.ts`，连接代码在 `src/db/client.ts`。更改表结构后运行：
+
+```sh
+npm run db:generate
+# 检查 drizzle/ 下生成的 SQL，提交表定义和迁移文件
+npm run db:migrate
+```
+
+迁移只管理 `core` Schema，迁移记录在 Drizzle 自己的 Schema 中。网站和股票看板可
+共用 PostgreSQL 实例，但各自维护 Schema、迁移和账号；先通过 API 接入 Banana MCP。
+详细边界见 [架构说明](docs/architecture.md)。
+
+### 备份与恢复
+
+`npm run db:backup` 使用容器内的 `pg_dump` 生成完整的自定义格式备份，保存到忽略提交的
+`data/backups/`。命令失败会清除不完整文件，不需要本机安装 PostgreSQL 客户端。
+它仅备份本地 Compose 数据库；配置 `DATABASE_URL` 时需自行使用对应服务的备份方案。
+
+恢复时先另建一个空数据库进行验证，替换命令中的备份文件名：
+
+```sh
+docker compose exec postgres sh -c 'createdb -U "$POSTGRES_USER" banana_restore'
+docker compose exec -T postgres sh -c 'pg_restore -U "$POSTGRES_USER" -d banana_restore --no-owner --no-privileges --exit-on-error' < data/backups/banana-时间戳.dump
+```
+
+数据库备份不包含 HAPI、AstrBot 或 Codex 文件，需另行备份对应私密目录。当前提供手动备份；
+自动备份周期和异机存储应在选定服务器后配置。
 
 ## 数据边界
 

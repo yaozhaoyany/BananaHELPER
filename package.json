@@ -18,15 +18,36 @@
     "hapi:doctor": "node scripts/hapi.mjs doctor",
     "hapi:token": "node scripts/hapi-token.mjs",
     "astrbot:up": "docker compose up -d astrbot",
-    "astrbot:down": "docker compose down",
+    "astrbot:down": "docker compose stop astrbot",
     "astrbot:logs": "docker compose logs -f astrbot",
-    "test": "node --test"
+    "db:up": "docker compose up -d --wait postgres",
+    "db:stop": "docker compose stop postgres",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:check": "tsx scripts/db-check.ts",
+    "db:backup": "node scripts/db-backup.mjs",
+    "test:db": "tsx --test test/database.integration.ts",
+    "typecheck": "tsc",
+    "test": "node --import tsx --test test/*.test.mjs"
   },
   "dependencies": {
-    "@twsxtd/hapi": "0.33.1"
+    "@twsxtd/hapi": "0.33.1",
+    "drizzle-orm": "0.45.4",
+    "pg": "8.23.1"
   },
   "engines": {
     "node": ">=22"
   },
-  "license": "MIT"
+  "license": "MIT",
+  "overrides": {
+    "@esbuild-kit/core-utils": {
+      "esbuild": "0.25.12"
+    }
+  },
+  "devDependencies": {
+    "@types/pg": "8.23.1",
+    "drizzle-kit": "0.31.11",
+    "tsx": "4.23.15",
+    "typescript": "7.0.2"
+  }
 }

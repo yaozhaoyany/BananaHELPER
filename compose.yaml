@@ -1,4 +1,22 @@
 services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    profiles: [database]
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-banana}
+      POSTGRES_USER: ${POSTGRES_USER:-banana_owner}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-}
+    ports:
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"']
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
   astrbot:
     image: ${ASTRBOT_IMAGE:-soulter/astrbot:latest}
     container_name: bananahelper-astrbot
@@ -14,3 +32,6 @@ services:
       - "host.docker.internal:host-gateway"
     volumes:
       - ./data/astrbot:/AstrBot/data
+
+volumes:
+  postgres-data:
