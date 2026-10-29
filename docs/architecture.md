@@ -26,12 +26,25 @@ Slack / QQ / 微信 → AstrBot → Connector ├→ HAPI Hub → Runner → Cod
 | AstrBot | `data/astrbot/` | 通过平台和插件配置管理 |
 | Codex | 用户自己的 Codex 数据目录 | 官方工具管理 |
 | BananaHELPER | PostgreSQL `core` | Drizzle 迁移 |
-| 股票看板 | 现有数据库，或将来的独立 Schema | 原应用管理迁移 |
-| 个人网站 | 现有数据库，或将来的独立 Schema | 原应用管理迁移 |
+| 股票看板 | 尚未搭建；规划使用 PostgreSQL `stocks` | 接入时由该应用管理迁移 |
+| 个人网站 | 尚未搭建；规划使用 PostgreSQL `website` | 接入时由该应用管理迁移 |
 
 可以复用同一个 PostgreSQL 实例，不要求已有应用立即迁移。每个应用使用独立账号，
 MCP 优先调用业务 API；确有直接查询需求时才增加只读视图和只读账号。
 业务 API 负责身份与业务校验，写工具的审批不能只靠 Skills 中的文字约定。
+
+## 暂缓接入的业务模块
+
+网站和股票看板暂不接入，仓库和 API 地址使用以下占位符：
+
+| 模块 | 仓库地址 | API 地址 | 状态 |
+| --- | --- | --- | --- |
+| 个人网站 | `<PERSONAL_WEBSITE_REPOSITORY_URL>` | `<PERSONAL_WEBSITE_API_URL>` | 待接入，数据库尚未搭建 |
+| 股票看板 | `<STOCK_DASHBOARD_REPOSITORY_URL>` | `<STOCK_DASHBOARD_API_URL>` | 待接入，数据库尚未搭建 |
+
+`.env.example` 中对应字段仅为注释形式的规划占位，当前程序不会读取、克隆或请求这些地址。
+这两个模块不影响 Hub、Runner、AstrBot 和 `core` 数据库运行。
+`website`、`stocks` Schema 及业务表等数据模型明确后再创建；当前迁移只创建 `core`。
 
 ## 当前实现
 
@@ -47,7 +60,7 @@ MCP 优先调用业务 API；确有直接查询需求时才增加只读视图和
 ## 后续顺序
 
 1. 配置 Slack，验证创建会话、消息、审批和结果返回，再增加 QQ、微信。
-2. 核对网站、股票看板仓库及 API，增加 Banana MCP 的只读工具。
+2. 网站、股票看板保留占位；准备好后替换地址，核对 API 和数据模型，再增加 Banana MCP 的只读工具。
 3. 增加 Skills，并将任务创建和 HAPI 事件接入 `core.tasks`；届时定义状态同步与幂等策略。
 4. 为写操作增加业务端授权和审批，为网站增加 Agent Center。
 5. 出现真实定时任务需求后增加 schedules 和 task_runs；不提前建立空表。
