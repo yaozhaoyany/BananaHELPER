@@ -24,8 +24,8 @@ services:
     security_opt:
       - no-new-privileges:true
     ports:
-      - "${ASTRBOT_WEB_PORT:-6185}:6185"
-      - "${ASTRBOT_ONEBOT_PORT:-6199}:6199"
+      - "127.0.0.1:${ASTRBOT_WEB_PORT:-6185}:6185"
+      - "127.0.0.1:${ASTRBOT_ONEBOT_PORT:-6199}:6199"
     environment:
       TZ: ${TZ:-Asia/Shanghai}
     extra_hosts:

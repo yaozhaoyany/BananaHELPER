@@ -88,6 +88,8 @@ npm run hapi:token
 
 然后配置一个聊天平台，在对应聊天窗口发送 `/hapi list` 检查链路。
 
+Slack 的可导入 Manifest、Token 保存位置与验收步骤见 [Slack 接入指南](docs/slack.md)。
+
 `HAPI_LISTEN_HOST=0.0.0.0` 是为了让 Docker 容器访问 Hub。不要把 3006 端口
 直接暴露到公网；跨公网访问请使用 `npm run hapi:hub:relay` 或受保护的 HTTPS
 反向代理，并保管好 Access Token。
