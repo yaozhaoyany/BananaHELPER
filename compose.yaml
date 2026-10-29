@@ -1,7 +1,7 @@
 services:
   astrbot:
     image: ${ASTRBOT_IMAGE:-soulter/astrbot:latest}
-    container_name: bananabot-astrbot
+    container_name: bananahelper-astrbot
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true

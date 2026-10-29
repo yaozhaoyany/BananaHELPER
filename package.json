@@ -1,5 +1,5 @@
 {
-  "name": "banana-bot",
+  "name": "banana-helper",
   "version": "0.1.0",
   "private": true,
   "description": "Remote-control Codex CLI from Slack, QQ and WeChat through HAPI and AstrBot",

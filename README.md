@@ -1,4 +1,4 @@
-# BananaBOT
+# BananaHELPER
 
 通过 Slack、QQ 和微信远程管理 Codex CLI 会话的开源机器人工作台。
 
@@ -38,8 +38,8 @@ AstrBot 运行在 Docker 中，只负责聊天平台适配和消息路由。
 ## 第一次启动
 
 ```sh
-git clone https://github.com/yaozhaoyany/BananaBOT.git
-cd BananaBOT
+git clone https://github.com/yaozhaoyany/BananaHELPER.git
+cd BananaHELPER
 cp .env.example .env
 npm ci
 npm run setup
@@ -123,5 +123,5 @@ npm test                     # 检查仓库配置与启动器
 
 ## License
 
-BananaBOT 原创代码使用 [MIT](LICENSE)。HAPI 与 HAPI Connector 使用
+BananaHELPER 原创代码使用 [MIT](LICENSE)。HAPI 与 HAPI Connector 使用
 AGPL-3.0-only；AstrBot 及其他依赖保留各自许可证。
