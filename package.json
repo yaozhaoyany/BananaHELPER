@@ -7,6 +7,9 @@
   "scripts": {
     "setup": "node scripts/setup.mjs",
     "start": "node scripts/hapi.mjs hub --no-relay",
+    "banana:start": "node scripts/banana.mjs start",
+    "banana:status": "node scripts/banana.mjs status",
+    "banana:stop": "node scripts/banana.mjs stop",
     "hapi:hub:relay": "node scripts/hapi.mjs hub --relay",
     "hapi:runner:start": "node scripts/hapi.mjs runner start",
     "hapi:runner:status": "node scripts/hapi.mjs runner status",

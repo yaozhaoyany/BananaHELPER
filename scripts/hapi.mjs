@@ -16,14 +16,16 @@ const hapiPackage = require(packagePath);
 const bin = typeof hapiPackage.bin === 'string' ? hapiPackage.bin : hapiPackage.bin.hapi;
 const cli = resolve(dirname(packagePath), bin);
 const args = process.argv.slice(2);
+const listenPort = process.env.HAPI_LISTEN_PORT || '3006';
 
 const child = spawn(process.execPath, [cli, ...args], {
   cwd: process.cwd(),
   env: {
     ...process.env,
     HAPI_HOME: resolve(root, process.env.HAPI_HOME || 'data/hapi'),
+    HAPI_API_URL: process.env.HAPI_API_URL || `http://127.0.0.1:${listenPort}`,
     HAPI_LISTEN_HOST: process.env.HAPI_LISTEN_HOST || '0.0.0.0',
-    HAPI_LISTEN_PORT: process.env.HAPI_LISTEN_PORT || '3006',
+    HAPI_LISTEN_PORT: listenPort,
   },
   stdio: 'inherit',
 });

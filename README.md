@@ -48,7 +48,23 @@ npm run setup
 `setup` 会把经过固定版本校验的 HAPI Connector 安装到 AstrBot 数据目录，
 不会复制 Codex 凭据，也不会提交任何 Token。
 
-启动 AstrBot：
+先用一条命令启动 HAPI Hub、后台 Runner，并进入 Codex：
+
+```sh
+npm run banana:start -- --cd /absolute/path/to/project
+```
+
+退出 Codex 后，Hub 和 Runner 会继续在后台运行。可以随时查看或停止：
+
+```sh
+npm run banana:status
+npm run banana:stop
+```
+
+Hub 日志保存在 `data/hapi/banana-hub.log`。如果 3006 端口上已经有手动启动的
+Hub，脚本会继续使用它，但不会在 `banana:stop` 时结束不归自己管理的进程。
+
+确认 HAPI 与 Codex 工作正常后，再启动 AstrBot：
 
 ```sh
 npm run astrbot:up
@@ -95,6 +111,9 @@ Codex 使用当前用户的登录状态和权限配置。不要把 `~/.codex`、
 
 ```sh
 npm start                    # 本地启动 HAPI Hub
+npm run banana:start -- --cd /path/to/project # 启动 Hub、Runner 并进入 Codex
+npm run banana:status        # 查看 Hub 和 Runner 状态
+npm run banana:stop          # 停止后台 Runner 和脚本启动的 Hub
 npm run hapi:hub:relay       # 通过 HAPI 公共中继启动 Hub
 npm run hapi:runner:start    # 启动后台 Runner
 npm run hapi:runner:status   # 查看 Runner 状态

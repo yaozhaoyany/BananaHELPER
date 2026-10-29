@@ -31,4 +31,18 @@ test('the local HAPI launcher resolves and forwards CLI arguments', () => {
   assert.ifError(result.error);
   assert.equal(result.status, 0, result.stderr);
   assert.match(result.stdout, /\d+\.\d+\.\d+/);
+  const launcher = readFileSync(new URL('../scripts/hapi.mjs', import.meta.url), 'utf8');
+  assert.match(launcher, /HAPI_API_URL/);
+});
+
+test('the one-command Codex workflow is exposed', () => {
+  assert.equal(pkg.scripts['banana:start'], 'node scripts/banana.mjs start');
+  assert.equal(pkg.scripts['banana:status'], 'node scripts/banana.mjs status');
+  assert.equal(pkg.scripts['banana:stop'], 'node scripts/banana.mjs stop');
+  const result = spawnSync(process.execPath, [fileURLToPath(new URL('../scripts/banana.mjs', import.meta.url)), '--help'], {
+    cwd: root,
+    encoding: 'utf8',
+  });
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /npm run banana:start/);
 });
