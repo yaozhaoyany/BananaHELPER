@@ -98,15 +98,11 @@ async function startHub() {
   throw new Error(`HAPI Hub did not open port ${port}. Check ${logFile}`);
 }
 
-async function start(codexArgs) {
+async function start(runnerArgs) {
   await startHub();
-  const runner = runHapi(['runner', 'start']);
+  const runner = runHapi(['runner', 'start', ...runnerArgs]);
   if (runner.status !== 0) process.exit(runner.status ?? 1);
-
-  console.log('Starting Codex through HAPI...');
-  const codex = runHapi(['codex', ...codexArgs]);
-  if (codex.status !== 0) process.exit(codex.status ?? 1);
-  console.log('Codex exited. Hub and Runner are still running; use npm run banana:stop to stop them.');
+  console.log('BananaHELPER is ready. Remote sessions will start Codex app-server through the Runner.');
 }
 
 async function status() {
@@ -150,7 +146,7 @@ function help() {
   console.log(`BananaHELPER local runtime
 
 Usage:
-  npm run banana:start -- --cd /absolute/path/to/project
+  npm run banana:start -- --workspace-root /absolute/path/to/projects
   npm run banana:status
   npm run banana:stop`);
 }

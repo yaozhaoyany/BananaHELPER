@@ -35,7 +35,7 @@ test('the local HAPI launcher resolves and forwards CLI arguments', () => {
   assert.match(launcher, /HAPI_API_URL/);
 });
 
-test('the one-command Codex workflow is exposed', () => {
+test('the background HAPI runtime workflow is exposed', () => {
   assert.equal(pkg.scripts['banana:start'], 'node scripts/banana.mjs start');
   assert.equal(pkg.scripts['banana:status'], 'node scripts/banana.mjs status');
   assert.equal(pkg.scripts['banana:stop'], 'node scripts/banana.mjs stop');
@@ -44,5 +44,5 @@ test('the one-command Codex workflow is exposed', () => {
     encoding: 'utf8',
   });
   assert.equal(result.status, 0, result.stderr);
-  assert.match(result.stdout, /npm run banana:start/);
+  assert.match(result.stdout, /banana:start -- --workspace-root/);
 });

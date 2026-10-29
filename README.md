@@ -48,13 +48,14 @@ npm run setup
 `setup` 会把经过固定版本校验的 HAPI Connector 安装到 AstrBot 数据目录，
 不会复制 Codex 凭据，也不会提交任何 Token。
 
-先用一条命令启动 HAPI Hub、后台 Runner，并进入 Codex：
+先用一条命令启动 HAPI Hub 和后台 Runner，并限制允许操作的项目目录：
 
 ```sh
-npm run banana:start -- --cd /absolute/path/to/project
+npm run banana:start -- --workspace-root /absolute/path/to/projects
 ```
 
-退出 Codex 后，Hub 和 Runner 会继续在后台运行。可以随时查看或停止：
+命令执行后会直接返回终端。之后从 HAPI Web 或机器人创建 Codex 会话时，Runner
+才会在后台启动对应的 Codex app-server，不会弹出 Codex 终端。可以随时查看或停止：
 
 ```sh
 npm run banana:status
@@ -96,9 +97,10 @@ npm run hapi:token
 直接暴露到公网；跨公网访问请使用 `npm run hapi:hub:relay` 或受保护的 HTTPS
 反向代理，并保管好 Access Token。
 
-## 创建 Codex 会话
+## 可选：从终端创建 Codex 会话
 
-可以从 HAPI Connector 使用 `/hapi create` 远程创建，也可以在项目目录手动启动：
+正常使用时，由 HAPI Connector 的 `/hapi create` 让 Runner 在后台创建会话。
+只有本地调试时才需要在项目目录手动启动：
 
 ```sh
 npm run hapi:codex -- --cd /absolute/path/to/project
@@ -111,7 +113,7 @@ Codex 使用当前用户的登录状态和权限配置。不要把 `~/.codex`、
 
 ```sh
 npm start                    # 本地启动 HAPI Hub
-npm run banana:start -- --cd /path/to/project # 启动 Hub、Runner 并进入 Codex
+npm run banana:start -- --workspace-root /path/to/projects # 后台启动 Hub 和 Runner
 npm run banana:status        # 查看 Hub 和 Runner 状态
 npm run banana:stop          # 停止后台 Runner 和脚本启动的 Hub
 npm run hapi:hub:relay       # 通过 HAPI 公共中继启动 Hub
