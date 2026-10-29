@@ -18,6 +18,7 @@ services:
       retries: 12
 
   astrbot:
+    init: true
     image: ${ASTRBOT_IMAGE:-soulter/astrbot:latest}
     container_name: bananahelper-astrbot
     restart: unless-stopped
