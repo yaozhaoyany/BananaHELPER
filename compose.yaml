@@ -1,0 +1,16 @@
+services:
+  astrbot:
+    image: ${ASTRBOT_IMAGE:-soulter/astrbot:latest}
+    container_name: bananabot-astrbot
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    ports:
+      - "${ASTRBOT_WEB_PORT:-6185}:6185"
+      - "${ASTRBOT_ONEBOT_PORT:-6199}:6199"
+    environment:
+      TZ: ${TZ:-Asia/Shanghai}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ./data/astrbot:/AstrBot/data

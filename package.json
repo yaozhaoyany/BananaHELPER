@@ -1,0 +1,29 @@
+{
+  "name": "banana-bot",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Remote-control Codex CLI from Slack, QQ and WeChat through HAPI and AstrBot",
+  "type": "module",
+  "scripts": {
+    "setup": "node scripts/setup.mjs",
+    "start": "node scripts/hapi.mjs hub --no-relay",
+    "hapi:hub:relay": "node scripts/hapi.mjs hub --relay",
+    "hapi:runner:start": "node scripts/hapi.mjs runner start",
+    "hapi:runner:status": "node scripts/hapi.mjs runner status",
+    "hapi:runner:stop": "node scripts/hapi.mjs runner stop",
+    "hapi:codex": "node scripts/hapi.mjs codex",
+    "hapi:doctor": "node scripts/hapi.mjs doctor",
+    "hapi:token": "node scripts/hapi-token.mjs",
+    "astrbot:up": "docker compose up -d astrbot",
+    "astrbot:down": "docker compose down",
+    "astrbot:logs": "docker compose logs -f astrbot",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "@twsxtd/hapi": "0.33.1"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "license": "MIT"
+}

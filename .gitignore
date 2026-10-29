@@ -1,0 +1,8 @@
+node_modules/
+.env
+.DS_Store
+*.log
+
+# Runtime state and secrets. Keep these out of Git.
+data/hapi/
+data/astrbot/
