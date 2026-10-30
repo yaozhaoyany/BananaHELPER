@@ -2,6 +2,10 @@ import { chmodSync, copyFileSync, existsSync, mkdirSync, readFileSync, renameSyn
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
+export function parseConfig(contents) {
+  return JSON.parse(contents.replace(/^\uFEFF/, ''));
+}
+
 export function slackPlatform(env) {
   if (!env.SLACK_BOT_TOKEN?.startsWith('xoxb-') || !env.SLACK_APP_TOKEN?.startsWith('xapp-')) {
     throw new Error('Set SLACK_BOT_TOKEN (xoxb-) and SLACK_APP_TOKEN (xapp-) in .env.');
@@ -37,20 +41,20 @@ function configure() {
   const connectorOnly = process.argv.includes('--connector-only');
   const platform = connectorOnly ? null : slackPlatform(process.env);
   const hapiHome = resolve(root, process.env.HAPI_HOME || 'data/hapi');
-  const { cliApiToken } = JSON.parse(readFileSync(join(hapiHome, 'settings.json'), 'utf8'));
+  const { cliApiToken } = parseConfig(readFileSync(join(hapiHome, 'settings.json'), 'utf8'));
   if (!cliApiToken) throw new Error('HAPI token is missing. Start HAPI first.');
 
   const configPath = join(root, 'data/astrbot/cmd_config.json');
   if (!existsSync(configPath)) throw new Error('Start AstrBot once before configuring it.');
   const pluginPath = join(root, 'data/astrbot/config/astrbot_plugin_hapi_connector_config.json');
-  const plugin = existsSync(pluginPath) ? JSON.parse(readFileSync(pluginPath, 'utf8')) : {};
+  const plugin = existsSync(pluginPath) ? parseConfig(readFileSync(pluginPath, 'utf8')) : {};
   plugin.hapi_endpoint = `http://host.docker.internal:${process.env.HAPI_LISTEN_PORT || 3006}`;
   plugin.access_token = cliApiToken;
   plugin.auto_approve_enabled = false;
   plugin.render_mode = 'text';
 
   if (platform) {
-    const config = JSON.parse(readFileSync(configPath, 'utf8'));
+    const config = parseConfig(readFileSync(configPath, 'utf8'));
     config.platform = (config.platform || []).filter((item) => item.id !== platform.id);
     config.platform.push(platform);
     config.admins_id = [...new Set([...(config.admins_id || []), process.env.SLACK_ADMIN_USER_ID])];

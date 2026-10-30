@@ -1,6 +1,12 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { slackPlatform } from '../scripts/slack-configure.mjs';
+import { slackPlatform, parseConfig } from '../scripts/slack-configure.mjs';
+
+test('AstrBot UTF-8 BOM configuration can be read without losing existing values', () => {
+  assert.deepEqual(parseConfig('\uFEFF{"admins_id":["U123ABC"],"platform":[]}'), {
+    admins_id: ['U123ABC'], platform: [],
+  });
+});
 
 test('Slack setup requires both token types and an explicit administrator', () => {
   assert.throws(() => slackPlatform({}), /SLACK_BOT_TOKEN/);
