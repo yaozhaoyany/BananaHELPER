@@ -13,11 +13,14 @@ index 9657580..160bb99 100644
      "description": "HAPI 服务地址",
      "type": "string",
 diff --git a/chat/command_handlers.py b/chat/command_handlers.py
-index ef4209e..f679c20 100644
+index ef4209e..43544b9 100644
 --- a/chat/command_handlers.py
 +++ b/chat/command_handlers.py
-@@ -330,7 +330,8 @@ class CommandHandlers:
+@@ -328,9 +328,11 @@ class CommandHandlers:
+             reminder += f"→ 发送到 [{target_flavor}] {target_sid[:8]} (当前窗口: {current_sid[:8]})\n"
+ 
          self.plugin._last_sends[event.unified_msg_origin] = (target_sid, text)
++        await self.state_mgr.capture_window(target_sid, event.unified_msg_origin, target_flavor)
          ok, msg = await session_ops.send_message(self.client, target_sid, text)
          await self.state_mgr.set_user_state(event)
 -        yield event.plain_result(reminder + msg)
@@ -26,8 +29,11 @@ index ef4209e..f679c20 100644
  
      # ── send（发送到当前会话） ──
  
-@@ -354,7 +355,8 @@ class CommandHandlers:
+@@ -352,9 +354,11 @@ class CommandHandlers:
+             return
+ 
          self.plugin._last_sends[event.unified_msg_origin] = (ready_sid, content)
++        await self.state_mgr.capture_window(ready_sid, event.unified_msg_origin, self.state_mgr.effective_flavor(event) or "claude")
          ok, msg = await session_ops.send_message(self.client, ready_sid, content)
          await self.state_mgr.set_user_state(event)
 -        yield event.plain_result((ready_msg or "") + msg)
@@ -36,6 +42,14 @@ index ef4209e..f679c20 100644
  
      # ── retry（重发上一条） ──
  
+@@ -380,6 +384,7 @@ class CommandHandlers:
+             return
+ 
+         preview = text if len(text) <= 40 else text[:40] + "..."
++        await self.state_mgr.capture_window(ready_sid, event.unified_msg_origin, self.state_mgr.effective_flavor(event) or "claude")
+         ok, msg = await session_ops.send_message(self.client, ready_sid, text)
+         await self.state_mgr.set_user_state(event)
+         yield event.plain_result(f"🔁 重发「{preview}」\n{(ready_msg or '')}{msg}")
 diff --git a/core/sse_listener.py b/core/sse_listener.py
 index 1a1abe1..4d3f6c7 100644
 --- a/core/sse_listener.py
@@ -79,7 +93,7 @@ index 1a1abe1..4d3f6c7 100644
              # 兜底：从 notify 链路外拿不到 plugin 时只发文本
              logger.warning(
 diff --git a/main.py b/main.py
-index 3200033..86591ef 100644
+index 3200033..0d68e59 100644
 --- a/main.py
 +++ b/main.py
 @@ -684,6 +684,13 @@ class HapiConnectorPlugin(Star):
@@ -96,7 +110,16 @@ index 3200033..86591ef 100644
          if not text:
              # 无文本但可能带附件（图片等），也转发
              from .core import file_ops
-@@ -902,7 +909,8 @@ class HapiConnectorPlugin(Star):
+@@ -895,6 +902,8 @@ class HapiConnectorPlugin(Star):
+ 
+         if send_text:
+             self._last_sends[umo] = (target_sid, send_text)
++        # Claim the reply route before sending; a fast response may arrive immediately.
++        await self.state_mgr.capture_window(target_sid, umo, target_flavor)
+         ok, msg = await session_ops.send_message(
+             self.client, target_sid, send_text, merged or None
+         )
+@@ -902,7 +911,8 @@ class HapiConnectorPlugin(Star):
              self._clear_staged_attachments(umo, target_sid)
              msg += f"（含暂存附件 ×{len(staged_atts)}）"
          await self.state_mgr.set_user_state(event)

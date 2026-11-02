@@ -40,6 +40,41 @@ class ConnectorBehavior(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(await fn(plugin, event, '检查项目'), '检查项目')
         self.assertIsNone(await fn(plugin, event, '/hapi s'))
 
+    async def test_focus_reply_route_is_claimed_before_sending_in_each_window(self):
+        core = types.ModuleType('banana.core')
+        core.file_ops = types.SimpleNamespace(upload_event_files=AsyncMock(return_value=([], '')))
+        sys.modules['banana.core'] = core
+        route = {'owner': 'old-channel'}
+        async def capture(sid, umo, flavor):
+            route['owner'] = umo
+        async def send(client, sid, text, attachments):
+            self.assertEqual(route['owner'], expected_window)
+            return True, 'sent'
+        ops = types.SimpleNamespace(send_message=send)
+        try:
+            fn = method('main.py', 'HapiConnectorPlugin', 'quick_prefix_handler',
+                        __package__='banana', AstrMessageEvent=object, session_ops=ops)
+            state = types.SimpleNamespace(
+                ensure_primary_session=AsyncMock(), effective_sid=lambda e: 'sid',
+                effective_flavor=lambda e: 'codex', current_sid=lambda e: 'sid',
+                capture_window=capture, set_user_state=AsyncMock())
+            plugin = types.SimpleNamespace(
+                notification_mgr=types.SimpleNamespace(_event_cache={}), _quick_prefix='>',
+                _is_admin=lambda e: True, state_mgr=state,
+                binding_mgr=types.SimpleNamespace(get_window_focus_mode=lambda umo: True),
+                _focus_forward_text=AsyncMock(return_value='你好'),
+                ensure_session_for_send=AsyncMock(return_value=(True, 'sid', '')),
+                client=None, _peek_staged_attachments=lambda *a: [],
+                _merge_attachment_lists=lambda *a: [], _last_sends={},
+                config={'banana_compact_output': True})
+            for expected_window in ('private-chat', 'channel', 'private-chat'):
+                event = types.SimpleNamespace(unified_msg_origin=expected_window, message_str='你好',
+                                              stop_event=Mock(), plain_result=lambda text: text)
+                self.assertEqual([m async for m in fn(plugin, event)], [])
+                event.stop_event.assert_called_once()
+        finally:
+            del sys.modules['banana.core']
+
     async def test_success_ack_is_hidden_but_failures_and_recovery_remain(self):
         ops = types.SimpleNamespace(send_message=AsyncMock(return_value=(True, '已发送 -> [id]')))
         fn = method('chat/command_handlers.py', 'CommandHandlers', 'cmd_send',
@@ -48,7 +83,8 @@ class ConnectorBehavior(unittest.IsolatedAsyncioTestCase):
                                       ensure_session_for_send=AsyncMock(return_value=(True, 'sid', '')),
                                       _last_sends={})
         handler = types.SimpleNamespace(plugin=plugin, _require_sid=lambda e: ('sid', ''),
-                                        client=None, state_mgr=types.SimpleNamespace(set_user_state=AsyncMock()))
+                                        client=None, state_mgr=types.SimpleNamespace(set_user_state=AsyncMock(),
+                                            capture_window=AsyncMock(), effective_flavor=lambda e: "codex"))
         event = types.SimpleNamespace(unified_msg_origin='channel', plain_result=lambda text: text)
         self.assertEqual([m async for m in fn(handler, event, 'test')], [])
         ops.send_message.return_value = (False, '发送失败: 401')
