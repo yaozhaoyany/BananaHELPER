@@ -21,6 +21,11 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm test
+      - name: Install and verify repeatable Connector patch
+        run: |
+          npm run setup
+          npm run setup
+          python3 test/connector-behavior.py
       - run: npm run typecheck
       - run: docker compose config --quiet
       - run: npm run db:up

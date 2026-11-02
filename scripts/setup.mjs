@@ -8,6 +8,7 @@ const plugins = join(root, 'data', 'astrbot', 'plugins');
 const target = join(plugins, 'astrbot_plugin_hapi_connector');
 const repository = 'https://github.com/LiJinHao999/astrbot_plugin_hapi_connector.git';
 const revision = 'f01caa88970035d316122d9d220442559be6d830';
+const patch = join(root, 'patches', 'connector-compact.patch');
 
 function git(args, cwd = root) {
   const result = spawnSync('git', args, { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
@@ -28,4 +29,13 @@ if (existsSync(target)) {
   git(['clone', '--no-checkout', repository, target]);
   git(['checkout', '--detach', revision], target);
   console.log('HAPI Connector installed.');
+}
+
+const patched = spawnSync('git', ['apply', '--reverse', '--check', patch], { cwd: target, stdio: 'ignore' });
+if (patched.status === 0) {
+  console.log('BananaHELPER Connector patch is already applied.');
+} else {
+  git(['apply', '--check', patch], target);
+  git(['apply', patch], target);
+  console.log('BananaHELPER Connector compact-output patch applied.');
 }

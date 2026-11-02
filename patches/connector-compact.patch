@@ -1,0 +1,124 @@
+diff --git a/_conf_schema.json b/_conf_schema.json
+index 9657580..160bb99 100644
+--- a/_conf_schema.json
++++ b/_conf_schema.json
+@@ -1,4 +1,9 @@
+ {
++  "banana_compact_output": {
++    "description": "BananaHELPER 简洁输出：正文不带路径/ID，隐藏成功发送回执及重复完成通知",
++    "type": "bool",
++    "default": true
++  },
+   "hapi_endpoint": {
+     "description": "HAPI 服务地址",
+     "type": "string",
+diff --git a/chat/command_handlers.py b/chat/command_handlers.py
+index ef4209e..f679c20 100644
+--- a/chat/command_handlers.py
++++ b/chat/command_handlers.py
+@@ -330,7 +330,8 @@ class CommandHandlers:
+         self.plugin._last_sends[event.unified_msg_origin] = (target_sid, text)
+         ok, msg = await session_ops.send_message(self.client, target_sid, text)
+         await self.state_mgr.set_user_state(event)
+-        yield event.plain_result(reminder + msg)
++        if not ok or reminder or not self.plugin.config.get("banana_compact_output", True):
++            yield event.plain_result(reminder + msg)
+ 
+     # ── send（发送到当前会话） ──
+ 
+@@ -354,7 +355,8 @@ class CommandHandlers:
+         self.plugin._last_sends[event.unified_msg_origin] = (ready_sid, content)
+         ok, msg = await session_ops.send_message(self.client, ready_sid, content)
+         await self.state_mgr.set_user_state(event)
+-        yield event.plain_result((ready_msg or "") + msg)
++        if not ok or ready_msg or not self.plugin.config.get("banana_compact_output", True):
++            yield event.plain_result((ready_msg or "") + msg)
+ 
+     # ── retry（重发上一条） ──
+ 
+diff --git a/core/sse_listener.py b/core/sse_listener.py
+index 1a1abe1..2842b05 100644
+--- a/core/sse_listener.py
++++ b/core/sse_listener.py
+@@ -629,6 +629,14 @@ class SSEListener:
+                     continue
+                 if last_seq > 0 and last_seq <= self._message_notified_seqs.get(sid, -1):
+                     continue
++                compact = self.plugin is not None and self.plugin.config.get("banana_compact_output", True)
++                if compact and push_level != "silence":
++                    # Token/status events advance lastSeq after the reply was delivered.
++                    messages = await session_ops.fetch_messages(self.client, sid, limit=50)
++                    latest_user = max((m.get("seq", 0) for m in messages
++                                       if m.get("content", {}).get("role") == "user"), default=0)
++                    if self._message_notified_seqs.get(sid, -1) > latest_user:
++                        continue
+                 label = session_label_short(sid, self.sessions_cache)
+                 if push_level == "silence":
+                     await self._push_notification(
+@@ -636,7 +644,7 @@ class SSEListener:
+                     )
+                 else:
+                     # 无新可见正文时轻量提示（避免全被过滤后完全没反馈）
+-                    await self._push_notification(f"✅ 会话已完成\n{label}", sid)
++                    await self._push_notification("✅ 已完成" if compact else f"✅ 会话已完成\n{label}", sid)
+             if not self._completion_sids:
+                 break
+ 
+@@ -1114,6 +1122,9 @@ class SSEListener:
+         if not (body or "").strip() and not (fallback_text or "").strip():
+             return
+         plugin = self.plugin
++        if plugin is not None and plugin.config.get("banana_compact_output", True):
++            fallback_text = body
++            label = ""
+         if plugin is None:
+             # 兜底：从 notify 链路外拿不到 plugin 时只发文本
+             logger.warning(
+diff --git a/main.py b/main.py
+index 3200033..86591ef 100644
+--- a/main.py
++++ b/main.py
+@@ -684,6 +684,13 @@ class HapiConnectorPlugin(Star):
+         故不做排除，按普通消息转发给 AI。
+         """
+         text = (raw or "").strip()
++        if event.get_platform_name() == "slack" and not event.is_private_chat():
++            mentioned = any(
++                isinstance(part, Comp.At) and str(part.qq) == str(event.get_self_id())
++                for part in event.get_messages()
++            )
++            if not mentioned:
++                return None
+         if not text:
+             # 无文本但可能带附件（图片等），也转发
+             from .core import file_ops
+@@ -902,7 +909,8 @@ class HapiConnectorPlugin(Star):
+             self._clear_staged_attachments(umo, target_sid)
+             msg += f"（含暂存附件 ×{len(staged_atts)}）"
+         await self.state_mgr.set_user_state(event)
+-        yield event.plain_result(reminder + msg)
++        if not ok or reminder or not self.config.get("banana_compact_output", True):
++            yield event.plain_result(reminder + msg)
+         event.stop_event()
+ 
+     # ──── Focus 附件暂存（发送区） ────
+diff --git a/webui/web_api.py b/webui/web_api.py
+index c1111c8..da0435b 100644
+--- a/webui/web_api.py
++++ b/webui/web_api.py
+@@ -18,6 +18,7 @@ PLUGIN_NAME = "astrbot_plugin_hapi_connector"
+ 
+ # 与 _conf_schema.json 对齐的可读写键
+ CONFIG_KEYS = (
++    "banana_compact_output",
+     "hapi_endpoint",
+     "access_token",
+     "proxy_url",
+@@ -84,6 +85,7 @@ CARD_PRESETS = ("terminal_light", "terminal_dark", "clean", "compact")
+ CARD_DENSITY = ("comfortable", "compact")
+ 
+ BOOL_KEYS = frozenset({
++    "banana_compact_output",
+     "poke_approve",
+     "remind_pending",
+     "auto_approve_enabled",

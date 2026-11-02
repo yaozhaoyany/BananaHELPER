@@ -89,6 +89,8 @@ npm run hapi:token
 然后配置一个聊天平台，在对应聊天窗口发送 `/hapi list` 检查链路。
 
 Slack 的可导入 Manifest、Token 保存位置与验收步骤见 [Slack 接入指南](docs/slack.md)。
+已接通的频道可使用 `npm run slack:profile -- C频道ID` 开启专注模式并保存项目模板，
+日常以 `@BananaHELPER 任务内容` 复用当前会话；详细行为见接入指南中的“日常助手模式”。
 
 `HAPI_LISTEN_HOST=0.0.0.0` 是为了让 Docker 容器访问 Hub。不要把 3006 端口
 直接暴露到公网；跨公网访问请使用 `npm run hapi:hub:relay` 或受保护的 HTTPS

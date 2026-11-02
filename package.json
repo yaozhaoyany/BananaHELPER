@@ -21,6 +21,7 @@
     "astrbot:down": "docker compose stop astrbot",
     "astrbot:logs": "docker compose logs -f astrbot",
     "slack:configure": "node scripts/slack-configure.mjs",
+    "slack:profile": "node scripts/slack-profile.mjs",
     "db:up": "docker compose up -d --wait postgres",
     "db:stop": "docker compose stop postgres",
     "db:generate": "drizzle-kit generate",
