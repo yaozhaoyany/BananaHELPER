@@ -37,25 +37,29 @@ index ef4209e..f679c20 100644
      # ── retry（重发上一条） ──
  
 diff --git a/core/sse_listener.py b/core/sse_listener.py
-index 1a1abe1..2842b05 100644
+index 1a1abe1..4d3f6c7 100644
 --- a/core/sse_listener.py
 +++ b/core/sse_listener.py
-@@ -629,6 +629,14 @@ class SSEListener:
+@@ -629,6 +629,18 @@ class SSEListener:
                      continue
                  if last_seq > 0 and last_seq <= self._message_notified_seqs.get(sid, -1):
                      continue
 +                compact = self.plugin is not None and self.plugin.config.get("banana_compact_output", True)
 +                if compact and push_level != "silence":
 +                    # Token/status events advance lastSeq after the reply was delivered.
-+                    messages = await session_ops.fetch_messages(self.client, sid, limit=50)
-+                    latest_user = max((m.get("seq", 0) for m in messages
-+                                       if m.get("content", {}).get("role") == "user"), default=0)
-+                    if self._message_notified_seqs.get(sid, -1) > latest_user:
-+                        continue
++                    try:
++                        messages = await session_ops.fetch_messages(self.client, sid, limit=50)
++                    except Exception as error:
++                        logger.warning("Completion dedupe lookup failed: %s", type(error).__name__)
++                    else:
++                        latest_user = max((m.get("seq", 0) for m in messages
++                                           if m.get("content", {}).get("role") == "user"), default=0)
++                        if self._message_notified_seqs.get(sid, -1) > latest_user:
++                            continue
                  label = session_label_short(sid, self.sessions_cache)
                  if push_level == "silence":
                      await self._push_notification(
-@@ -636,7 +644,7 @@ class SSEListener:
+@@ -636,7 +648,7 @@ class SSEListener:
                      )
                  else:
                      # 无新可见正文时轻量提示（避免全被过滤后完全没反馈）
@@ -64,7 +68,7 @@ index 1a1abe1..2842b05 100644
              if not self._completion_sids:
                  break
  
-@@ -1114,6 +1122,9 @@ class SSEListener:
+@@ -1114,6 +1126,9 @@ class SSEListener:
          if not (body or "").strip() and not (fallback_text or "").strip():
              return
          plugin = self.plugin

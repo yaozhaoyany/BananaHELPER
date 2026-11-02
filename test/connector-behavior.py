@@ -81,7 +81,7 @@ class ConnectorBehavior(unittest.IsolatedAsyncioTestCase):
         ops = types.SimpleNamespace(fetch_messages=AsyncMock(return_value=[{'seq': 10, 'content': {'role': 'user'}}]))
         fn = method('core/sse_listener.py', 'SSEListener', '_debounced_completion',
                     asyncio=types.SimpleNamespace(sleep=AsyncMock()), session_ops=ops,
-                    session_label_short=lambda *args: 'FULL PATH AND ID')
+                    session_label_short=lambda *args: 'FULL PATH AND ID', logger=Mock())
         listener = types.SimpleNamespace(
             plugin=types.SimpleNamespace(config={'banana_compact_output': True}),
             _completion_sids={'sid'}, _lock=asyncio.Lock(), pending={},
@@ -95,6 +95,12 @@ class ConnectorBehavior(unittest.IsolatedAsyncioTestCase):
         ops.fetch_messages.return_value = [{'seq': 20, 'content': {'role': 'user'}}]
         listener._completion_sids = {'sid'}
         listener.session_states['sid']['lastSeq'] = 22
+        await fn(listener)
+        listener._push_notification.assert_awaited_once_with('✅ 已完成', 'sid')
+        listener._push_notification.reset_mock()
+        listener._completion_sids = {'sid'}
+        listener.session_states['sid']['lastSeq'] = 25
+        ops.fetch_messages.side_effect = TimeoutError('temporary outage')
         await fn(listener)
         listener._push_notification.assert_awaited_once_with('✅ 已完成', 'sid')
 
